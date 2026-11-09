@@ -30,7 +30,7 @@ jobs:
           cd ..
 
       - name: run make
-        run: cc PlistSet.c -o PlistSet -lplist-2.0
+        run: cc PlistSet.c -o PlistSet -lplist-2.0 -lm
 
       - name: Zip img4lib
         run: zip -r PlistSet_linux-${{ matrix.arch.name }}.zip PlistSet
