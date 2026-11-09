@@ -1,0 +1,48 @@
+name: Build
+
+on: [push]
+
+jobs:
+  build-linux:
+    strategy:
+      matrix:
+        arch:
+          - runner: ubuntu-22.04
+            name: x86_64
+          - runner: ubuntu-22.04-arm
+            name: aarch64
+
+    name: build-linux-${{ matrix.arch.name }}
+    runs-on: ${{ matrix.arch.runner }}
+
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          submodules: recursive
+
+      - name: Install dependencies
+        run: |
+          git clone --filter=blob:none https://github.com/libimobiledevice/libplist
+          cd libplist
+          ./autogen.sh --disable-shared
+          make
+          sudo make install
+          cd ..
+
+      - name: run make
+        run: cc PlistSet.c -o PlistSet -lplist-2.0 -lm
+
+      - name: Zip img4lib
+        run: zip -r PlistSet_linux-${{ matrix.arch.name }}.zip PlistSet
+
+      - name: Update latest release
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release upload latest \
+            PlistSet_linux-${{ matrix.arch.name }}.zip \
+            --clobber -R ${{ github.repository }}
+
+          gh release edit latest \
+            --title "Latest" \
+            --target ${{ github.sha }} -R ${{ github.repository }}
